@@ -1,0 +1,67 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: demo-db
+    hostname: demo-db
+    networks:
+      - demo-net
+    volumes:
+      - demo-db:/var/opt/mssql
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=Password123!
+    ports:
+      - '50000:1433'
+    restart: unless-stopped
+
+  cache:
+    image: redis:latest
+    container_name: demo-cache
+    networks:
+      - demo-net
+    hostname: demo-cache
+    volumes:
+      - demo-cache:/data
+    restart: unless-stopped
+
+  mq:
+    image: rabbitmq:3-management
+    container_name: demo-mq
+    hostname: demo-mq
+    networks:
+      - demo-net
+    volumes:
+      - demo-mq:/var/lib/rabbitmq
+    ports:
+      - '50001:15672'
+    restart: unless-stopped
+
+  producer:
+    image: appproducer:latest
+    container_name: demo-producer
+    networks:
+      - demo-net
+    depends_on:
+      - mq
+      - cache
+    restart: unless-stopped
+
+  consumer:
+    image: appconsumer:latest
+    container_name: demo-consumer
+    networks:
+      - demo-net
+    depends_on:
+      - mq
+      - cache
+      - db
+    restart: unless-stopped
+
+networks:
+  demo-net:
+    driver: bridge
+
+volumes:
+  demo-mq:
+  demo-db:
+  demo-cache:
